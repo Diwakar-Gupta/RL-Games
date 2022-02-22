@@ -1,0 +1,9 @@
+cloudpickle==2.0.0
+gym==0.21.0
+numpy==1.21.4
+Pillow==8.4.0
+pyglet==1.5.21
+torch==1.10.0+cpu
+torchaudio==0.10.0+cpu
+torchvision==0.11.1+cpu
+typing-extensions==4.0.1
