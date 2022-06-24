@@ -1,77 +1,87 @@
-import gym
-import numpy as np
-import random
 import os
-import time
-
+import numpy as np
+import gym
+import random
+from tqdm import tqdm
 
 # create Taxi environment
 env = gym.make('Taxi-v3')
+# env = gym.make('CliffWalking-v0')
 
-# Q-Learning
-state_size = env.observation_space.n  # total number of states (S)
-action_size = env.action_space.n      # total number of actions (A)
+
+# initialize q-table
+state_size = env.observation_space.n
+action_size = env.action_space.n
 qtable = np.zeros((state_size, action_size))
 
-learning_rate = 0.9
+# hyperparameters
 discount_rate = 0.8
-epsilon = 1.0     # probability that our agent will explore
-decay_rate = 0.005 # of epsilon
+epsilon = 1.0 # exploit(0) explore(1)
+decay_rate= 0.005
 
+# training variables
+num_episodes = 1000
+max_steps = 99 # per episode
 
-# create a new instance of taxi, and get the initial state
-
-max_steps = 99
-
-episode = 1
-
-total_score = 0
-record = 0
-
-def prnt(action, reward, step):
-    os.system('clear')
-    env.render()
-    print(action)
-    print()
-    print('Episodes:', episode-1)
-    print('TimeStep:', step)
-    print('Reward:', reward)
-    print('Average:', total_score//episode)
-
-
-# for episode in range(num_episode):
-while True:
+# training
+for episode in tqdm(range(num_episodes)):
+    # reset the environment
     state = env.reset()
     done = False
-    score = 0
 
-    for step in range(max_steps):
+    for s in range(max_steps):
 
-        # sample a random action from the list of available actions
+        # exploration-exploitation tradeoff
         if random.uniform(0,1) < epsilon:
             # explore
             action = env.action_space.sample()
         else:
             # exploit
             action = np.argmax(qtable[state,:])
-            
 
-        # perform this action on the environment
+        # take action and observe reward
         new_state, reward, done, info = env.step(action)
 
-        qtable[state, action] += learning_rate * (reward + discount_rate * np.max(qtable[new_state,:]) - qtable[state,action])
-        # print the new state
-        state = new_state
-        score += reward
-        
-        # env.render()
-        prnt(action, reward, step)
-        # input()
-        if done:
-            break
-        # time.sleep(0.9)
-    epsilon = np.exp(-decay_rate*episode)
-    episode += 1
+        # Q-learning algorithm
+        # qtable[state,action] = qtable[state,action] + learning_rate * (reward + discount_rate * np.max(qtable[new_state,:])-qtable[state,action])
+        qtable[state,action] = reward + discount_rate * np.max(qtable[new_state,:])
 
-    record = max(record, score)
-    total_score += score
+        # Update to our new state
+        state = new_state
+
+        # if done, finish episode
+        if done == True:
+            break
+
+    # Decrease epsilon
+    epsilon = np.exp(-decay_rate*episode)
+
+
+# Testing
+
+print(f"Training completed over {num_episodes} episodes")
+input("Press Enter to watch trained agent...")
+
+# watch trained agent
+state = env.reset()
+env.render()
+done = False
+rewards = 0
+
+for s in range(max_steps):
+    print(f"TRAINED AGENT")
+    print("Step {}".format(s+1))
+
+    action = np.argmax(qtable[state,:])
+    new_state, reward, done, info = env.step(action)
+    rewards += reward
+    os.system('cls') # for linux replace cls with clear
+    env.render()
+    print(f"score: {rewards}")
+    state = new_state
+
+    if done == True:
+        break
+    input()
+
+env.close()
